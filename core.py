@@ -1,5 +1,3 @@
-# Maya Node Creator Core
-
 import logging
 
 import maya.cmds as cmds
