@@ -1,2 +1,2 @@
-# maya_node_creator
+# Maya Node Creator
 Create maya nodes easily
