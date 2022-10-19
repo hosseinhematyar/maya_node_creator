@@ -15,13 +15,18 @@ class Object:
     def __init__(self, object_type, object_transform=''):
         self.object_type = object_type
         self.object_transform = object_transform
+        self.maya_object_transform = ''
         self.material_shading_node = ''
         self.material_shading_engine = ''
 
     def create(self):
         self._create_object()
-        self._create_material()
         self._create_annotation()
+        self._add_attribute()
+        self._set_attribute()
+        self.get_translate()
+        self._create_material()
+        self.get_color()
 
     def _create_object(self):
         if self.object_type not in AllTypes:
@@ -62,11 +67,45 @@ class Object:
         # Create Locator and set parent
         self.locator = cmds.spaceLocator()
         self.locator_name = self.locator[0]
-        cmds.parent(self.locator_name, self.object_transform)
+        # cmds.parent(self.locator_name, self.object_transform)
 
         # Create Annotation and set parent
         self.annotate_name = cmds.annotate(self.object_transform, tx=self.object_transform)
-        cmds.parent(self.annotate_name, self.locator_name, shape=True)
+        # cmds.parent(self.annotate_name, self.locator_name)
+
+    def _add_attribute(self):
+        if not cmds.objExists(self.object_transform):
+            logging.warning('Add Attribute --> No surface exists')
+            return
+        cmds.addAttr(self.object_transform, attributeType='bool', shortName='mnc', longName='MayaNodeCreator')
+
+    def _set_attribute(self):
+        if not cmds.objExists(self.object_transform):
+            logging.warning('Add Attribute --> No surface exists')
+            return
+        cmds.setAttr(f'{self.object_transform}.mnc', k=True)
+        cmds.setAttr(f'{self.object_transform}.mnc', 1)
+        self.mnc_attribute_status = cmds.getAttr(f'{self.object_transform}.mnc')
+        return self.mnc_attribute_status
+
+    def get_translate(self):
+        if not cmds.objExists(self.object_transform):
+            logging.warning('Get Translate --> No surface exists')
+            return
+        object_translate = cmds.getAttr(f'{self.object_transform}.translate')[0]
+        return object_translate
+
+    def get_color(self):
+        if not cmds.objExists(self.object_transform):
+            logging.warning('Get Color --> No surface exists')
+            return
+
+        if not cmds.objExists(self.material_shading_node):
+            logging.warning('Get Color --> No Material Shading Node exists')
+            return
+
+        object_color = cmds.getAttr(f'{self.material_shading_node}.color')[0]
+        return object_color
 
     def select(self):
         if not cmds.objExists(self.object_transform):
@@ -79,7 +118,6 @@ class Object:
         if not cmds.objExists(self.object_transform):
             logging.warning('Delete Object --> No surface exists')
             return
-
         cmds.delete(self.object_transform)
 
     def move(self, tx=0, tz=0, ty=0):
