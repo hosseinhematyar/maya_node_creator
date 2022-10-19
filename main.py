@@ -151,7 +151,6 @@ class NodeCreator(QtWidgets.QDialog):
         tx_cell_item = self.objects_table.item(row, column).text()
         if column == self.header_names.index('TranslateX'):
             pass
-
         print('row -->', row)
         print('column -->', column)
         print('changed to -->', tx_cell_item)

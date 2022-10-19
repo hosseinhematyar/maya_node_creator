@@ -10,7 +10,6 @@ AllTypes = {
     'Torus': cmds.polyTorus
 }
 
-
 class Object:
     def __init__(self, object_type, object_transform=''):
         self.object_type = object_type
