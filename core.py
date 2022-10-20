@@ -118,14 +118,29 @@ class Object:
         if not cmds.objExists(self.object_transform):
             logging.warning('Delete Object --> No surface exists')
             return
+
         cmds.delete(self.object_transform)
 
-    def move(self, tx=0, tz=0, ty=0):
+    def set_translate_x(self, translate_x):
         if not cmds.objExists(self.object_transform):
-            logging.warning('Move Object --> No surface exists')
+            logging.warning('Set Translate X --> No surface exists')
             return
 
-        cmds.setAttr(f'{self.object_transform}.translate', tx, tz, ty, edit=True, type="double3")
+        cmds.setAttr(f'{self.object_transform}.tx', translate_x, edit=True)
+
+    def set_translate_y(self, translate_y):
+        if not cmds.objExists(self.object_transform):
+            logging.warning('Set Translate Y --> No surface exists')
+            return
+
+        cmds.setAttr(f'{self.object_transform}.ty', translate_y, edit=True)
+
+    def set_translate_z(self, translate_z):
+        if not cmds.objExists(self.object_transform):
+            logging.warning('Set Translate Z --> No surface exists')
+            return
+
+        cmds.setAttr(f'{self.object_transform}.tz', translate_z, edit=True)
 
     def set_color(self, r=0, g=0, b=0):
         if not self.material_shading_node:
@@ -140,5 +155,7 @@ if __name__ == '__main__':
     object_instance.create()
     object_instance.select()
     object_instance.delete()
-    object_instance.move(5, 5, 5)
+    object_instance.set_translate_x(5)
+    object_instance.set_translate_y(5)
+    object_instance.set_translate_z(5)
     object_instance.set_color(2, 2, 2)

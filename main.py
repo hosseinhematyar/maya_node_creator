@@ -1,9 +1,7 @@
 import maya.cmds as cmds
-from PySide2 import QtWidgets
+from PySide2 import QtWidgets, QtCore
 
 from . import core
-
-from functools import partial
 
 
 def new_scene():
@@ -15,12 +13,12 @@ def new_scene():
 class NodeCreator(QtWidgets.QDialog):
     def __init__(self):
         super(NodeCreator, self).__init__()
-        self.tx_item = 0
         self.setWindowTitle("Maya Node Creator")
         self.setMinimumWidth(200)
         self.header_names = ['', 'Name', 'Type', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
 
         self.object_name = QtWidgets.QLineEdit()
+        # self.object_name.setEnabled(False)
 
         self.object_type = QtWidgets.QComboBox()
         self.object_type.addItems(list(core.AllTypes.keys()))
@@ -38,9 +36,8 @@ class NodeCreator(QtWidgets.QDialog):
         self.objects_table.setMinimumWidth(720)
         self.objects_table.setColumnWidth(0, 40)
         self.objects_table.setColumnWidth(1, 160)
-        # self.objects_table.setColumnWidth(6, 100)
         self.objects_table.setHorizontalHeaderLabels(self.header_names)
-        self.objects_table.cellChanged.connect(self.edit_object)
+        self.objects_table.itemChanged.connect(self.on_item_changed)
 
         self.create_button = QtWidgets.QPushButton('Create Object')
         self.create_button.clicked.connect(self.create_object)
@@ -134,32 +131,43 @@ class NodeCreator(QtWidgets.QDialog):
 
         type_item = QtWidgets.QTableWidgetItem(object_instance.object_type)
         self.objects_table.setItem(self.row_count, 2, type_item)
+        type_item.setFlags(QtCore.Qt.ItemIsEnabled)
 
         tx_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[0]))
         self.objects_table.setItem(self.row_count, 3, tx_item)
+        tx_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_x)
 
         ty_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[1]))
         self.objects_table.setItem(self.row_count, 4, ty_item)
+        ty_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_y)
 
         tz_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[2]))
         self.objects_table.setItem(self.row_count, 5, tz_item)
+        tz_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_z)
 
         color_item = QtWidgets.QTableWidgetItem(str(object_instance.get_color()))
         self.objects_table.setItem(self.row_count, 6, color_item)
 
-    def edit_object(self, row, column):
-        tx_cell_item = self.objects_table.item(row, column).text()
-        if column == self.header_names.index('TranslateX'):
-            pass
-        print('row -->', row)
-        print('column -->', column)
-        print('changed to -->', tx_cell_item)
+    def on_item_changed(self, item):
+        setter_function = item.data(QtCore.Qt.UserRole)
+        if not setter_function:
+            return
+
+        changed_value = item.text()
+        if not changed_value:
+            return
+
+        if item.column() == self.header_names.index('TranslateX'):
+            setter_function(float(changed_value))
+
+        if item.column() == self.header_names.index('TranslateY'):
+            setter_function(float(changed_value))
+
+        if item.column() == self.header_names.index('TranslateZ'):
+            setter_function(float(changed_value))
 
     def develop(self):
         pass
-        # tx_cell_item = float(self.objects_table.item(0, 3).text())
-        # print(self.tx_item)
-        # print(type(self.tx_item))
 
 
 try:
