@@ -8,6 +8,7 @@ def new_scene():
     cmds.file(f=True, new=True)
     viewport = cmds.getPanel(withFocus=True)
     cmds.modelEditor(viewport, edit=True, wireframeOnShaded=True)
+    cmds.scriptEditorInfo(clearHistory=True)
 
 
 class NodeCreator(QtWidgets.QDialog):
@@ -15,10 +16,12 @@ class NodeCreator(QtWidgets.QDialog):
         super(NodeCreator, self).__init__()
         self.setWindowTitle("Maya Node Creator")
         self.setMinimumWidth(200)
-        self.header_names = ['', 'Name', 'Type', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
+        self.header_names = ['S', 'Name', 'Type', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
+
+        self.object_checkbox = QtWidgets.QCheckBox()
+        # self.object_checkbox.setCheckState(QtCore.Qt.Unchecked)
 
         self.object_name = QtWidgets.QLineEdit()
-        # self.object_name.setEnabled(False)
 
         self.object_type = QtWidgets.QComboBox()
         self.object_type.addItems(list(core.AllTypes.keys()))
@@ -33,16 +36,15 @@ class NodeCreator(QtWidgets.QDialog):
 
         self.objects_table = QtWidgets.QTableWidget()
         self.objects_table.setColumnCount(7)
-        self.objects_table.setMinimumWidth(720)
-        self.objects_table.setColumnWidth(0, 40)
-        self.objects_table.setColumnWidth(1, 160)
+        self.objects_table.setMinimumWidth(640)
+        self.objects_table.setColumnWidth(0, 8)
         self.objects_table.setHorizontalHeaderLabels(self.header_names)
         self.objects_table.itemChanged.connect(self.on_item_changed)
 
         self.create_button = QtWidgets.QPushButton('Create Object')
         self.create_button.clicked.connect(self.create_object)
 
-        self.new_scene_button = QtWidgets.QPushButton('New Scene')
+        self.new_scene_button = QtWidgets.QPushButton('Reset')
         self.new_scene_button.clicked.connect(new_scene)
 
         self.delete_button = QtWidgets.QPushButton('Delete')
@@ -54,7 +56,7 @@ class NodeCreator(QtWidgets.QDialog):
         self.cancel_button = QtWidgets.QPushButton('Cancel')
         self.cancel_button.clicked.connect(self.close)
 
-        self.develop_button = QtWidgets.QPushButton('<<-- DEVELOP -->>')
+        self.develop_button = QtWidgets.QPushButton('Develop Test')
         self.develop_button.clicked.connect(self.develop)
 
         self.export_button = QtWidgets.QPushButton('Export')
@@ -76,6 +78,10 @@ class NodeCreator(QtWidgets.QDialog):
         self.features_layout.addWidget(self.color_blue)
         self.features_layout.addWidget(self.color_green)
 
+        # Color
+        self.object_color = QtWidgets.QPushButton('Color Picker')
+        self.object_color.clicked.connect(self.on_color_picker)
+
         # Objects Table
         self.objects_list_layout = QtWidgets.QHBoxLayout()
         self.objects_list_layout.addWidget(self.objects_table)
@@ -89,6 +95,7 @@ class NodeCreator(QtWidgets.QDialog):
         self.button_layout_2 = QtWidgets.QHBoxLayout()
         self.button_layout_2.addWidget(self.develop_button)
         self.button_layout_2.addWidget(self.delete_button)
+        self.button_layout_2.addWidget(self.object_color)
         # self.button_layout_2.addWidget(self.move_button)
         self.button_layout_2.addWidget(self.export_button)
         self.button_layout_2.addWidget(self.cancel_button)
@@ -115,38 +122,49 @@ class NodeCreator(QtWidgets.QDialog):
         self.object_storage = []
 
     def create_object(self):
-        # Create object instance using core
         object_instance = core.Object(self.object_type.currentText(), self.object_name.text())
         object_instance.create()
-
-        # Keep track of created instances in object storage
         self.object_storage.append(object_instance)
-
-        # Add object instance data to table
-        # self.objects_table.setRowCount(0)
         self.row_count = self.objects_table.rowCount()
         self.objects_table.insertRow(self.row_count)
+
+        checkbox_item = QtWidgets.QTableWidgetItem()
+        self.objects_table.setItem(self.row_count, 0, checkbox_item)
+        checkbox_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+        checkbox_item.setCheckState(QtCore.Qt.Checked)
+        checkbox_item.setTextAlignment(QtCore.Qt.AlignCenter)
+
         transform_item = QtWidgets.QTableWidgetItem(object_instance.object_transform)
         self.objects_table.setItem(self.row_count, 1, transform_item)
+        transform_item.setData(QtCore.Qt.UserRole, object_instance.set_transform_name)
+        transform_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
         type_item = QtWidgets.QTableWidgetItem(object_instance.object_type)
         self.objects_table.setItem(self.row_count, 2, type_item)
-        type_item.setFlags(QtCore.Qt.ItemIsEnabled)
+        type_item.setFlags(QtCore.Qt.ItemIsUserCheckable)
+        type_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
         tx_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[0]))
         self.objects_table.setItem(self.row_count, 3, tx_item)
         tx_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_x)
+        tx_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
         ty_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[1]))
         self.objects_table.setItem(self.row_count, 4, ty_item)
         ty_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_y)
+        ty_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
         tz_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[2]))
         self.objects_table.setItem(self.row_count, 5, tz_item)
         tz_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_z)
+        tz_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
-        color_item = QtWidgets.QTableWidgetItem(str(object_instance.get_color()))
-        self.objects_table.setItem(self.row_count, 6, color_item)
+        color_item = QtWidgets.QTableWidgetItem()
+        self.objects_table.setCellWidget(self.row_count, 6, self.object_color)
+        # self.objects_table.setItem(self.row_count, 6, color_item)
+        color_item.setData(QtCore.Qt.UserRole, object_instance.set_color)
+        color_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        # color_item.setData(QtCore.Qt.UserRole, object_instance.get_color())
 
     def on_item_changed(self, item):
         setter_function = item.data(QtCore.Qt.UserRole)
@@ -157,6 +175,12 @@ class NodeCreator(QtWidgets.QDialog):
         if not changed_value:
             return
 
+        if item.column() == self.header_names.index('S'):
+            print('Checkbox item is changed')
+
+        if item.column() == self.header_names.index('Name'):
+            setter_function(str(changed_value))
+
         if item.column() == self.header_names.index('TranslateX'):
             setter_function(float(changed_value))
 
@@ -165,6 +189,14 @@ class NodeCreator(QtWidgets.QDialog):
 
         if item.column() == self.header_names.index('TranslateZ'):
             setter_function(float(changed_value))
+
+        # if item.column() == self.header_names.index('Color'):
+        #     setter_function(float(changed_value))
+
+    def on_color_picker(self):
+        color = QtWidgets.QColorDialog.getColor()
+        if color.isValid():
+            print(color.name())
 
     def develop(self):
         pass

@@ -104,8 +104,15 @@ class Object:
             logging.warning('Get Color --> No Material Shading Node exists')
             return
 
-        object_color = cmds.getAttr(f'{self.material_shading_node}.color')[0]
-        return object_color
+        red, green, blue = cmds.getAttr(f'{self.material_shading_node}.color')[0]
+        return red, green, blue
+
+    def set_color(self, red=0, green=0, blue=0):
+        if not self.material_shading_node:
+            logging.warning('Set Color --> No material exists')
+            return
+
+        cmds.setAttr(self.material_shading_node + ".color", red, green, blue)
 
     def select(self):
         if not cmds.objExists(self.object_transform):
@@ -120,6 +127,14 @@ class Object:
             return
 
         cmds.delete(self.object_transform)
+
+    def set_transform_name(self, new_object_transform):
+        if not cmds.objExists(self.object_transform):
+            logging.warning('Set Transform Name --> No surface exists')
+            return
+
+        cmds.select(self.object_transform, r=True)
+        self.object_transform = cmds.rename(new_object_transform)
 
     def set_translate_x(self, translate_x):
         if not cmds.objExists(self.object_transform):
@@ -141,13 +156,6 @@ class Object:
             return
 
         cmds.setAttr(f'{self.object_transform}.tz', translate_z, edit=True)
-
-    def set_color(self, r=0, g=0, b=0):
-        if not self.material_shading_node:
-            logging.warning('Set Color --> No material exists')
-            return
-
-        cmds.setAttr(self.material_shading_node + ".color", r, g, b)
 
 
 if __name__ == '__main__':
