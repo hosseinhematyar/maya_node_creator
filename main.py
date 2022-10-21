@@ -78,10 +78,6 @@ class NodeCreator(QtWidgets.QDialog):
         self.features_layout.addWidget(self.color_blue)
         self.features_layout.addWidget(self.color_green)
 
-        # Color
-        self.object_color = QtWidgets.QPushButton('Color Picker')
-        self.object_color.clicked.connect(self.on_color_picker)
-
         # Objects Table
         self.objects_list_layout = QtWidgets.QHBoxLayout()
         self.objects_list_layout.addWidget(self.objects_table)
@@ -95,7 +91,6 @@ class NodeCreator(QtWidgets.QDialog):
         self.button_layout_2 = QtWidgets.QHBoxLayout()
         self.button_layout_2.addWidget(self.develop_button)
         self.button_layout_2.addWidget(self.delete_button)
-        self.button_layout_2.addWidget(self.object_color)
         # self.button_layout_2.addWidget(self.move_button)
         self.button_layout_2.addWidget(self.export_button)
         self.button_layout_2.addWidget(self.cancel_button)
@@ -159,11 +154,11 @@ class NodeCreator(QtWidgets.QDialog):
         tz_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_z)
         tz_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
-        color_item = QtWidgets.QTableWidgetItem()
-        self.objects_table.setCellWidget(self.row_count, 6, self.object_color)
+        # color_item = QtWidgets.QTableWidgetItem()
+        self.objects_table.setCellWidget(self.row_count, 6, QtWidgets.QPushButton('Color Picker'))
         # self.objects_table.setItem(self.row_count, 6, color_item)
-        color_item.setData(QtCore.Qt.UserRole, object_instance.set_color)
-        color_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        # color_item.setData(QtCore.Qt.UserRole, object_instance.set_color)
+        # color_item.setTextAlignment(QtCore.Qt.AlignCenter)
         # color_item.setData(QtCore.Qt.UserRole, object_instance.get_color())
 
     def on_item_changed(self, item):
