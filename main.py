@@ -1,5 +1,8 @@
+import maya.OpenMayaUI as omui
 import maya.cmds as cmds
+import sys
 from PySide2 import QtWidgets, QtCore
+from shiboken2 import wrapInstance
 
 from . import core
 
@@ -11,12 +14,23 @@ def new_scene():
     cmds.scriptEditorInfo(clearHistory=True)
 
 
+def maya_main_window():
+    """
+    Return the Maya main window widget as a Python object
+    """
+    main_window_ptr = omui.MQtUtil.mainWindow()
+    if sys.version_info.major >= 3:
+        return wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
+    else:
+        return wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
+
+
 class NodeCreator(QtWidgets.QDialog):
     def __init__(self):
-        super(NodeCreator, self).__init__()
+        super(NodeCreator, self).__init__(parent=maya_main_window())
         self.setWindowTitle("Maya Node Creator")
         self.setMinimumWidth(200)
-        self.header_names = ['S', 'Name', 'Type', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
+        self.header_names = ['Name', 'Type', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
 
         self.object_checkbox = QtWidgets.QCheckBox()
         # self.object_checkbox.setCheckState(QtCore.Qt.Unchecked)
@@ -35,9 +49,8 @@ class NodeCreator(QtWidgets.QDialog):
         self.color_green = QtWidgets.QSpinBox()
 
         self.objects_table = QtWidgets.QTableWidget()
-        self.objects_table.setColumnCount(7)
+        self.objects_table.setColumnCount(len(self.header_names))
         self.objects_table.setMinimumWidth(640)
-        self.objects_table.setColumnWidth(0, 8)
         self.objects_table.setHorizontalHeaderLabels(self.header_names)
         self.objects_table.itemChanged.connect(self.on_item_changed)
 
@@ -123,75 +136,83 @@ class NodeCreator(QtWidgets.QDialog):
         self.row_count = self.objects_table.rowCount()
         self.objects_table.insertRow(self.row_count)
 
-        checkbox_item = QtWidgets.QTableWidgetItem()
-        self.objects_table.setItem(self.row_count, 0, checkbox_item)
-        checkbox_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-        checkbox_item.setCheckState(QtCore.Qt.Checked)
-        checkbox_item.setTextAlignment(QtCore.Qt.AlignCenter)
-
         transform_item = QtWidgets.QTableWidgetItem(object_instance.object_transform)
-        self.objects_table.setItem(self.row_count, 1, transform_item)
-        transform_item.setData(QtCore.Qt.UserRole, object_instance.set_transform_name)
+        transform_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+        transform_item.setCheckState(QtCore.Qt.Checked)
+        self.objects_table.setItem(self.row_count, 0, transform_item)
+        transform_item.setData(QtCore.Qt.UserRole, object_instance.set_object_transform)
         transform_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
         type_item = QtWidgets.QTableWidgetItem(object_instance.object_type)
-        self.objects_table.setItem(self.row_count, 2, type_item)
-        type_item.setFlags(QtCore.Qt.ItemIsUserCheckable)
+        self.objects_table.setItem(self.row_count, 1, type_item)
+        type_item.setFlags(QtCore.Qt.NoItemFlags)
         type_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
-        tx_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[0]))
-        self.objects_table.setItem(self.row_count, 3, tx_item)
-        tx_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_x)
-        tx_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        tx_item = QtWidgets.QDoubleSpinBox()
+        tx_item.valueChanged.connect(self.on_value_changed)
+        tx_item.setProperty('translate_x', object_instance.set_translate_x)
+        self.objects_table.setCellWidget(self.row_count, 2, tx_item)
 
-        ty_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[1]))
-        self.objects_table.setItem(self.row_count, 4, ty_item)
-        ty_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_y)
-        ty_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        ty_item = QtWidgets.QDoubleSpinBox()
+        ty_item.valueChanged.connect(self.on_value_changed)
+        ty_item.setProperty('translate_y', object_instance.set_translate_y)
+        self.objects_table.setCellWidget(self.row_count, 3, ty_item)
 
-        tz_item = QtWidgets.QTableWidgetItem(str(object_instance.get_translate()[2]))
-        self.objects_table.setItem(self.row_count, 5, tz_item)
-        tz_item.setData(QtCore.Qt.UserRole, object_instance.set_translate_z)
-        tz_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        tz_item = QtWidgets.QDoubleSpinBox()
+        tz_item.valueChanged.connect(self.on_value_changed)
+        tz_item.setProperty('translate_z', object_instance.set_translate_z)
+        self.objects_table.setCellWidget(self.row_count, 4, tz_item)
 
-        # color_item = QtWidgets.QTableWidgetItem()
-        self.objects_table.setCellWidget(self.row_count, 6, QtWidgets.QPushButton('Color Picker'))
-        # self.objects_table.setItem(self.row_count, 6, color_item)
-        # color_item.setData(QtCore.Qt.UserRole, object_instance.set_color)
-        # color_item.setTextAlignment(QtCore.Qt.AlignCenter)
-        # color_item.setData(QtCore.Qt.UserRole, object_instance.get_color())
+        color_button = QtWidgets.QPushButton('')
+        color_button.clicked.connect(self.on_color_picker)
+        color_button.setProperty('color_setter', object_instance.set_color)
+        self.objects_table.setCellWidget(self.row_count, 5, color_button)
 
     def on_item_changed(self, item):
-        setter_function = item.data(QtCore.Qt.UserRole)
-        if not setter_function:
+        item_data = item.data(QtCore.Qt.UserRole)
+        if not item_data:
             return
 
         changed_value = item.text()
         if not changed_value:
             return
 
-        if item.column() == self.header_names.index('S'):
-            print('Checkbox item is changed')
-
         if item.column() == self.header_names.index('Name'):
-            setter_function(str(changed_value))
+            new_transform_name = item_data(changed_value)
+            item.setText(new_transform_name)
 
-        if item.column() == self.header_names.index('TranslateX'):
-            setter_function(float(changed_value))
+    def on_value_changed(self, value):
+        sender = self.sender()
+        set_tx_function = sender.property('translate_x')
+        set_ty_function = sender.property('translate_y')
+        set_tz_function = sender.property('translate_z')
 
-        if item.column() == self.header_names.index('TranslateY'):
-            setter_function(float(changed_value))
+        if set_tx_function:
+            set_tx_function(value)
 
-        if item.column() == self.header_names.index('TranslateZ'):
-            setter_function(float(changed_value))
+        if set_ty_function:
+            set_ty_function(value)
 
-        # if item.column() == self.header_names.index('Color'):
-        #     setter_function(float(changed_value))
+        if set_tz_function:
+            set_tz_function(value)
 
     def on_color_picker(self):
-        color = QtWidgets.QColorDialog.getColor()
-        if color.isValid():
-            print(color.name())
+        sender = self.sender()
+        set_color_function = sender.property('color_setter')
+
+        object_color = QtWidgets.QColorDialog.getColor(parent=maya_main_window())
+        if not object_color:
+            return
+
+        if not object_color.isValid():
+            return
+
+        red, green, blue, alpha = object_color.getRgbF()
+        red, green, blue = set_color_function(red=red, green=green, blue=blue)
+
+        object_color.setRgbF(red, green, blue)
+        red, green, blue, alpha = object_color.getRgb()
+        sender.setStyleSheet(f"background-color:rgb({red},{green},{blue})")
 
     def develop(self):
         pass

@@ -21,7 +21,7 @@ class Object:
 
     def create(self):
         self._create_object()
-        self._create_annotation()
+        # self._create_annotation()
         self._add_attribute()
         self._set_attribute()
         self.get_translate()
@@ -113,6 +113,7 @@ class Object:
             return
 
         cmds.setAttr(self.material_shading_node + ".color", red, green, blue)
+        return self.get_color()
 
     def select(self):
         if not cmds.objExists(self.object_transform):
@@ -128,13 +129,13 @@ class Object:
 
         cmds.delete(self.object_transform)
 
-    def set_transform_name(self, new_object_transform):
+    def set_object_transform(self, new_object_transform):
         if not cmds.objExists(self.object_transform):
             logging.warning('Set Transform Name --> No surface exists')
-            return
+            return self.object_transform
 
-        cmds.select(self.object_transform, r=True)
-        self.object_transform = cmds.rename(new_object_transform)
+        self.object_transform = cmds.rename(self.object_transform, new_object_transform)
+        return self.object_transform
 
     def set_translate_x(self, translate_x):
         if not cmds.objExists(self.object_transform):
@@ -142,6 +143,7 @@ class Object:
             return
 
         cmds.setAttr(f'{self.object_transform}.tx', translate_x, edit=True)
+        return translate_x
 
     def set_translate_y(self, translate_y):
         if not cmds.objExists(self.object_transform):
@@ -149,6 +151,7 @@ class Object:
             return
 
         cmds.setAttr(f'{self.object_transform}.ty', translate_y, edit=True)
+        return translate_y
 
     def set_translate_z(self, translate_z):
         if not cmds.objExists(self.object_transform):
@@ -156,6 +159,7 @@ class Object:
             return
 
         cmds.setAttr(f'{self.object_transform}.tz', translate_z, edit=True)
+        return translate_z
 
 
 if __name__ == '__main__':
@@ -163,7 +167,7 @@ if __name__ == '__main__':
     object_instance.create()
     object_instance.select()
     object_instance.delete()
-    object_instance.set_translate_x(5)
+    object_instance.set_translate_x(5.4)
     object_instance.set_translate_y(5)
     object_instance.set_translate_z(5)
     object_instance.set_color(2, 2, 2)
