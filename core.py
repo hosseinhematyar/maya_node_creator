@@ -12,9 +12,12 @@ AllTypes = {
 
 
 class Object:
-    def __init__(self, object_type, object_transform=''):
+    def __init__(self, object_type, object_transform='', object_tx=0, object_ty=0, object_tz=0):
         self.object_type = object_type
         self.object_transform = object_transform
+        self.object_tx = object_tx
+        self.object_ty = object_ty
+        self.object_tz = object_tz
         self.maya_object_transform = ''
         self.material_shading_node = ''
         self.material_shading_engine = ''
@@ -34,6 +37,7 @@ class Object:
             return
 
         object_creator = AllTypes[self.object_type]
+
         if not object_creator:
             logging.warning('Create Object --> Object Creator not found')
             return
@@ -42,7 +46,11 @@ class Object:
         if self.object_transform:
             kwargs['name'] = self.object_transform
 
-        self.object_transform, _ = object_creator(**kwargs)
+        self.object_transform = object_creator(**kwargs)
+        self.object_transform = self.object_transform[0]
+
+        if self.object_transform:
+            cmds.setAttr(f'{self.object_transform}.t', self.object_tx, self.object_ty, self.object_tz, type="double3")
 
     def _create_material(self):
         self.material_shading_node = cmds.shadingNode('lambert', asShader=True)
@@ -163,7 +171,7 @@ class Object:
 
 
 if __name__ == '__main__':
-    object_instance = Object('Cube', 'my')
+    object_instance = Object('Cube', 'my', 5, 5, 5)
     object_instance.create()
     object_instance.select()
     object_instance.delete()
