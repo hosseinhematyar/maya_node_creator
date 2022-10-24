@@ -149,16 +149,19 @@ class NodeCreator(QtWidgets.QDialog):
         type_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
         tx_item = QtWidgets.QDoubleSpinBox()
+        tx_item.setMinimum(-9999)
         tx_item.valueChanged.connect(self.on_value_changed)
         tx_item.setProperty('translate_x', object_instance.set_translate_x)
         self.objects_table.setCellWidget(self.row_count, 2, tx_item)
 
         ty_item = QtWidgets.QDoubleSpinBox()
+        ty_item.setMinimum(-9999)
         ty_item.valueChanged.connect(self.on_value_changed)
         ty_item.setProperty('translate_y', object_instance.set_translate_y)
         self.objects_table.setCellWidget(self.row_count, 3, ty_item)
 
         tz_item = QtWidgets.QDoubleSpinBox()
+        tz_item.setMinimum(-9999)
         tz_item.valueChanged.connect(self.on_value_changed)
         tz_item.setProperty('translate_z', object_instance.set_translate_z)
         self.objects_table.setCellWidget(self.row_count, 4, tz_item)
