@@ -1,13 +1,13 @@
 import maya.OpenMayaUI as omui
 import maya.cmds as cmds
 import sys
-from PySide2 import QtWidgets, QtCore
+from PySide2 import QtWidgets, QtCore, QtGui
 from shiboken2 import wrapInstance
 
 from . import core
 
 
-def new_scene():
+def reset():
     cmds.file(f=True, new=True)
     viewport = cmds.getPanel(withFocus=True)
     cmds.modelEditor(viewport, edit=True, wireframeOnShaded=True)
@@ -28,6 +28,7 @@ def maya_main_window():
 class NodeCreator(QtWidgets.QDialog):
     def __init__(self):
         super(NodeCreator, self).__init__(parent=maya_main_window())
+        self.chosen_color = QtGui.QColor()
         self.setWindowTitle("Maya Node Creator")
         self.setMinimumWidth(200)
         self.header_names = ['Name', 'Type', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
@@ -40,13 +41,12 @@ class NodeCreator(QtWidgets.QDialog):
         self.object_type = QtWidgets.QComboBox()
         self.object_type.addItems(list(core.AllTypes.keys()))
 
-        self.translate_x = QtWidgets.QDoubleSpinBox()
-        self.translate_y = QtWidgets.QDoubleSpinBox()
-        self.translate_z = QtWidgets.QDoubleSpinBox()
+        self.object_tx = QtWidgets.QDoubleSpinBox()
+        self.object_ty = QtWidgets.QDoubleSpinBox()
+        self.object_tz = QtWidgets.QDoubleSpinBox()
 
-        self.color_red = QtWidgets.QSpinBox()
-        self.color_blue = QtWidgets.QSpinBox()
-        self.color_green = QtWidgets.QSpinBox()
+        self.select_color = QtWidgets.QPushButton()
+        self.select_color.clicked.connect(self.on_select_color)
 
         self.objects_table = QtWidgets.QTableWidget()
         self.objects_table.setColumnCount(len(self.header_names))
@@ -57,23 +57,13 @@ class NodeCreator(QtWidgets.QDialog):
         self.create_button = QtWidgets.QPushButton('Create Object')
         self.create_button.clicked.connect(self.create_object)
 
-        self.new_scene_button = QtWidgets.QPushButton('Reset')
-        self.new_scene_button.clicked.connect(new_scene)
-
         self.delete_button = QtWidgets.QPushButton('Delete')
-        self.delete_button.clicked.connect('')
 
-        # self.move_button = QtWidgets.QPushButton('Move')
-        # self.delete_button.clicked.connect('')
+        self.reset_button = QtWidgets.QPushButton('Reset')
+        self.reset_button.clicked.connect(reset)
 
         self.cancel_button = QtWidgets.QPushButton('Cancel')
         self.cancel_button.clicked.connect(self.close)
-
-        self.develop_button = QtWidgets.QPushButton('Develop Test')
-        self.develop_button.clicked.connect(self.develop)
-
-        self.export_button = QtWidgets.QPushButton('Export')
-        self.export_button.clicked.connect('')
 
         # General Fields
         self.general_layout = QtWidgets.QFormLayout()
@@ -81,15 +71,13 @@ class NodeCreator(QtWidgets.QDialog):
         self.general_layout.addRow('Object Type:', self.object_type)
 
         # Features Fields
-        self.features_layout = QtWidgets.QVBoxLayout()
+        self.features_layout = QtWidgets.QHBoxLayout()
         self.features_layout.addWidget(QtWidgets.QLabel('Move Options:'))
-        self.features_layout.addWidget(self.translate_x)
-        self.features_layout.addWidget(self.translate_y)
-        self.features_layout.addWidget(self.translate_z)
+        self.features_layout.addWidget(self.object_tx)
+        self.features_layout.addWidget(self.object_ty)
+        self.features_layout.addWidget(self.object_tz)
         self.features_layout.addWidget(QtWidgets.QLabel('Set Color Options:'))
-        self.features_layout.addWidget(self.color_red)
-        self.features_layout.addWidget(self.color_blue)
-        self.features_layout.addWidget(self.color_green)
+        self.features_layout.addWidget(self.select_color)
 
         # Objects Table
         self.objects_list_layout = QtWidgets.QHBoxLayout()
@@ -97,15 +85,12 @@ class NodeCreator(QtWidgets.QDialog):
 
         # Button Layout 1
         self.button_layout_1 = QtWidgets.QHBoxLayout()
-        self.button_layout_1.addWidget(self.new_scene_button)
         self.button_layout_1.addWidget(self.create_button)
 
         # Button Layout 2
         self.button_layout_2 = QtWidgets.QHBoxLayout()
-        self.button_layout_2.addWidget(self.develop_button)
         self.button_layout_2.addWidget(self.delete_button)
-        # self.button_layout_2.addWidget(self.move_button)
-        self.button_layout_2.addWidget(self.export_button)
+        self.button_layout_2.addWidget(self.reset_button)
         self.button_layout_2.addWidget(self.cancel_button)
 
         # Main Left Layout
@@ -113,16 +98,14 @@ class NodeCreator(QtWidgets.QDialog):
         self.main_left_layout.addLayout(self.general_layout)
         self.main_left_layout.addLayout(self.features_layout)
         self.main_left_layout.addLayout(self.button_layout_1)
-        # self.setLayout(self.main_left_layout)
 
         # Main Right Layout
         self.main_right_layout = QtWidgets.QVBoxLayout()
         self.main_right_layout.addLayout(self.objects_list_layout)
         self.main_right_layout.addLayout(self.button_layout_2)
-        # self.setLayout(self.main_right_layout)
 
         # Main Layout
-        self.main_layout = QtWidgets.QHBoxLayout()
+        self.main_layout = QtWidgets.QVBoxLayout()
         self.main_layout.addLayout(self.main_left_layout)
         self.main_layout.addLayout(self.main_right_layout)
         self.setLayout(self.main_layout)
@@ -130,9 +113,18 @@ class NodeCreator(QtWidgets.QDialog):
         self.object_storage = []
 
     def create_object(self):
-        object_instance = core.Object(self.object_type.currentText(), self.object_name.text())
+        object_instance = core.Object(self.object_type.currentText(),
+                                      object_transform=self.object_name.text(),
+                                      object_tx=self.object_tx.value(),
+                                      object_ty=self.object_ty.value(),
+                                      object_tz=self.object_tz.value(),
+                                      color_red=self.chosen_color.redF(),
+                                      color_green=self.chosen_color.greenF(),
+                                      color_blue=self.chosen_color.blueF())
+
         object_instance.create()
         self.object_storage.append(object_instance)
+
         self.row_count = self.objects_table.rowCount()
         self.objects_table.insertRow(self.row_count)
 
@@ -199,6 +191,18 @@ class NodeCreator(QtWidgets.QDialog):
         if set_tz_function:
             set_tz_function(value)
 
+    def on_select_color(self):
+        sender = self.sender()
+        self.chosen_color = QtWidgets.QColorDialog.getColor(parent=maya_main_window())
+        if not self.chosen_color:
+            return
+
+        if not self.chosen_color.isValid():
+            return
+
+        red, green, blue, alpha = self.chosen_color.getRgb()
+        sender.setStyleSheet(f"background-color:rgb({red},{green},{blue})")
+
     def on_color_picker(self):
         sender = self.sender()
         set_color_function = sender.property('color_setter')
@@ -211,14 +215,11 @@ class NodeCreator(QtWidgets.QDialog):
             return
 
         red, green, blue, alpha = object_color.getRgbF()
-        red, green, blue = set_color_function(red=red, green=green, blue=blue)
+        red, green, blue = set_color_function(color_red=red, color_green=green, color_blue=blue)
 
         object_color.setRgbF(red, green, blue)
         red, green, blue, alpha = object_color.getRgb()
         sender.setStyleSheet(f"background-color:rgb({red},{green},{blue})")
-
-    def develop(self):
-        pass
 
 
 try:
