@@ -1,23 +1,22 @@
 import logging
+import os
 
 import maya.cmds as cmds
 
-
-AllTypes = {
-    'Cube': cmds.polyCube,
-    'Sphere': cmds.polySphere,
-    'Cylinder': cmds.polyCylinder,
-    'Cone': cmds.polyCone,
-    'Torus': cmds.polyTorus
-}
-
 FileList = {
-    'Cube': cmds.polyCube,
-    'Sphere': cmds.polySphere,
-    'Cylinder': cmds.polyCylinder,
-    'Cone': cmds.polyCone,
-    'Torus': cmds.polyTorus
+    '-- None --': None,
 }
+
+
+def get_file_list():
+    os.chdir('/Users/hossein/Desktop/scene_files/')
+    my_list = os.listdir('.')
+    for i in range(len(my_list)):
+        FileList[my_list[i]] = my_list[i]
+    # print(FileList)
+
+
+get_file_list()
 
 
 class Object:
@@ -46,11 +45,11 @@ class Object:
         self.get_color()
 
     def _create_object(self):
-        if self.object_type not in AllTypes:
+        if self.object_type not in FileList:
             logging.warning('Create Object --> Object type is not valid')
             return
 
-        object_creator = AllTypes[self.object_type]
+        object_creator = FileList[self.object_type]
 
         if not object_creator:
             logging.warning('Create Object --> Object Creator not found')

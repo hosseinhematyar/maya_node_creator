@@ -32,21 +32,39 @@ class NodeCreator(QtWidgets.QDialog):
         self.setWindowTitle("Maya Node Creator")
         self.setMinimumWidth(200)
         self.header_names = ['Name', 'Type', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
+        layout = QtWidgets.QGridLayout()
+        self.setLayout(layout)
+
+        groupbox_1 = QtWidgets.QGroupBox("General Setting")
+        layout.addWidget(groupbox_1)
+
+        groupbox_2 = QtWidgets.QGroupBox("Transform Setting")
+        layout.addWidget(groupbox_2)
+
+        groupbox_3 = QtWidgets.QGroupBox("Color Setting")
+        layout.addWidget(groupbox_3)
+
+        groupbox_4 = QtWidgets.QGroupBox("Objects List")
+        layout.addWidget(groupbox_4)
 
         self.object_checkbox = QtWidgets.QCheckBox()
         # self.object_checkbox.setCheckState(QtCore.Qt.Unchecked)
 
         self.object_name = QtWidgets.QLineEdit()
 
-        self.object_type = QtWidgets.QComboBox()
-        self.object_type.addItems(list(core.AllTypes.keys()))
+        self.object_list = QtWidgets.QComboBox()
+        self.object_list.addItems(list(core.FileList.keys()))
 
         self.object_tx = QtWidgets.QDoubleSpinBox()
         self.object_ty = QtWidgets.QDoubleSpinBox()
         self.object_tz = QtWidgets.QDoubleSpinBox()
 
         self.select_color = QtWidgets.QPushButton()
+        self.select_color.setMaximumWidth(50)
         self.select_color.clicked.connect(self.on_select_color)
+
+        self.random_color = QtWidgets.QCheckBox('Use random color')
+        self.random_color.clicked.connect('')
 
         self.objects_table = QtWidgets.QTableWidget()
         self.objects_table.setColumnCount(len(self.header_names))
@@ -56,6 +74,7 @@ class NodeCreator(QtWidgets.QDialog):
 
         self.create_button = QtWidgets.QPushButton('Create Object')
         self.create_button.clicked.connect(self.create_object)
+        self.create_button.setStyleSheet(f"background-color: green")
 
         self.delete_button = QtWidgets.QPushButton('Delete')
 
@@ -65,50 +84,57 @@ class NodeCreator(QtWidgets.QDialog):
         self.cancel_button = QtWidgets.QPushButton('Cancel')
         self.cancel_button.clicked.connect(self.close)
 
-        # General Fields
-        self.general_layout = QtWidgets.QFormLayout()
-        self.general_layout.addRow('Object Name:', self.object_name)
-        self.general_layout.addRow('Object Type:', self.object_type)
+        # General Setting
+        self.general_layout = QtWidgets.QHBoxLayout()
+        self.general_layout.addWidget(QtWidgets.QLabel('Object Name:'))
+        self.general_layout.addWidget(self.object_name)
+        self.general_layout.addWidget(QtWidgets.QLabel('Select object from object directory'))
+        self.general_layout.addWidget(self.object_list)
+        groupbox_1.setLayout(self.general_layout)
 
-        # Features Fields
-        self.features_layout = QtWidgets.QHBoxLayout()
-        self.features_layout.addWidget(QtWidgets.QLabel('Move Options:'))
-        self.features_layout.addWidget(self.object_tx)
-        self.features_layout.addWidget(self.object_ty)
-        self.features_layout.addWidget(self.object_tz)
-        self.features_layout.addWidget(QtWidgets.QLabel('Set Color Options:'))
-        self.features_layout.addWidget(self.select_color)
+        # Transform Setting
+        self.transform_layout = QtWidgets.QHBoxLayout()
+        self.transform_layout.addWidget(QtWidgets.QLabel('Object Location:'))
+        self.transform_layout.addWidget(self.object_tx)
+
+        self.transform_layout.addWidget(self.object_ty)
+        self.transform_layout.addWidget(self.object_tz)
+        groupbox_2.setLayout(self.transform_layout)
+
+        # Color Setting
+        self.color_layout = QtWidgets.QHBoxLayout()
+        self.color_layout.addWidget(QtWidgets.QLabel('Object Color:'))
+        self.color_layout.addWidget(self.select_color)
+        self.color_layout.addWidget(self.random_color)
+        groupbox_3.setLayout(self.color_layout)
 
         # Objects Table
         self.objects_list_layout = QtWidgets.QHBoxLayout()
         self.objects_list_layout.addWidget(self.objects_table)
 
-        # Button Layout 1
-        self.button_layout_1 = QtWidgets.QHBoxLayout()
-        self.button_layout_1.addWidget(self.create_button)
-
         # Button Layout 2
-        self.button_layout_2 = QtWidgets.QHBoxLayout()
-        self.button_layout_2.addWidget(self.delete_button)
-        self.button_layout_2.addWidget(self.reset_button)
-        self.button_layout_2.addWidget(self.cancel_button)
+        self.button_layout = QtWidgets.QHBoxLayout()
+        self.button_layout.addWidget(self.create_button)
+        self.button_layout.addWidget(self.delete_button)
+        self.button_layout.addWidget(self.reset_button)
+        self.button_layout.addWidget(self.cancel_button)
 
         # Main Left Layout
         self.main_left_layout = QtWidgets.QVBoxLayout()
         self.main_left_layout.addLayout(self.general_layout)
-        self.main_left_layout.addLayout(self.features_layout)
-        self.main_left_layout.addLayout(self.button_layout_1)
+        self.main_left_layout.addLayout(self.transform_layout)
+        self.main_left_layout.addLayout(self.color_layout)
 
         # Main Right Layout
         self.main_right_layout = QtWidgets.QVBoxLayout()
         self.main_right_layout.addLayout(self.objects_list_layout)
-        self.main_right_layout.addLayout(self.button_layout_2)
+        self.main_right_layout.addLayout(self.button_layout)
 
         # Main Layout
         self.main_layout = QtWidgets.QVBoxLayout()
         self.main_layout.addLayout(self.main_left_layout)
         self.main_layout.addLayout(self.main_right_layout)
-        self.setLayout(self.main_layout)
+        groupbox_4.setLayout(self.main_layout)
 
         self.object_storage = []
 
@@ -161,6 +187,7 @@ class NodeCreator(QtWidgets.QDialog):
         color_button = QtWidgets.QPushButton('')
         color_button.clicked.connect(self.on_color_picker)
         color_button.setProperty('color_setter', object_instance.set_color)
+        color_button.setProperty('color_getter', object_instance.get_color)
         self.objects_table.setCellWidget(self.row_count, 5, color_button)
 
     def on_item_changed(self, item):
