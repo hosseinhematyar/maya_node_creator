@@ -18,7 +18,6 @@ def get_reference_list():
         pathname, extension = os.path.splitext(file_full_name)
         filename = pathname.split('/')
         ReferenceList[my_list[i]] = filename[0]
-    # print(ReferenceList)
 
 
 get_reference_list()
@@ -53,6 +52,7 @@ class Object:
 
     def _import_reference(self):
         cmds.file(f'{reference_location}{self.object_reference}', namespace=self.name_space, reference=True)
+
         cmds.select(f'{self.name_space}:*', allDagObjects=True)
         selected = cmds.ls(sl=True, transforms=True)
 
@@ -60,24 +60,6 @@ class Object:
 
         for self.object_transform in selected:
             cmds.parent(self.object_transform, self.group_name)
-
-    # def _create_object(self):
-    #     if self.object_type not in FileList:
-    #         logging.warning('Create Object --> Object type is not valid')
-    #         return
-    #
-    #     object_creator = FileList[self.object_type]
-    #
-    #     if not object_creator:
-    #         logging.warning('Create Object --> Object Creator not found')
-    #         return
-    #
-    #     kwargs = {}
-    #     if self.object_transform:
-    #         kwargs['name'] = self.object_transform
-    #
-    #     self.object_transform = object_creator(**kwargs)
-    #     self.object_transform = self.object_transform[0]
 
     def _create_material(self):
         self.material_shading_node = cmds.shadingNode('lambert', asShader=True)
