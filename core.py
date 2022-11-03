@@ -3,27 +3,34 @@ import os
 
 import maya.cmds as cmds
 
-FileList = {
-    '-- None --': None,
+ReferenceList = {
+    '-- None --': 'None',
 }
 
+reference_location = '/Users/hossein/Desktop/scene_files/'
 
-def get_file_list():
-    os.chdir('/Users/hossein/Desktop/scene_files/')
+
+def get_reference_list():
+    os.chdir(reference_location)
     my_list = os.listdir('.')
     for i in range(len(my_list)):
-        FileList[my_list[i]] = my_list[i]
-    # print(FileList)
+        file_full_name = my_list[i]
+        pathname, extension = os.path.splitext(file_full_name)
+        filename = pathname.split('/')
+        ReferenceList[my_list[i]] = filename[0]
+    # print(ReferenceList)
 
 
-get_file_list()
+get_reference_list()
 
 
 class Object:
-    def __init__(self, object_type, object_transform='', object_tx=0, object_ty=0, object_tz=0, color_red=0,
-                 color_green=0, color_blue=0):
-        self.object_type = object_type
-        self.object_transform = object_transform
+    def __init__(self, name_space, object_reference, object_tx=0, object_ty=0, object_tz=0,
+                 color_red=0, color_green=0, color_blue=0):
+        self.name_space = name_space
+        self.object_reference = object_reference
+        self.group_name = ''
+        self.object_transform = ''
         self.object_tx = object_tx
         self.object_ty = object_ty
         self.object_tz = object_tz
@@ -34,33 +41,43 @@ class Object:
         self.material_shading_engine = ''
 
     def create(self):
-        self._create_object()
-        self.set_translate(self.object_tx, self.object_ty, self.object_tz)
+        self._import_reference()
+        # self.set_translate(self.object_tx, self.object_ty, self.object_tz)
         # self._create_annotation()
-        self._add_attribute()
-        self._set_attribute()
-        self.get_translate()
-        self._create_material()
-        self.set_color(self.color_red, self.color_green, self.color_blue)
-        self.get_color()
+        # self._add_attribute()
+        # self._set_attribute()
+        # self.get_translate()
+        # self._create_material()
+        # self.set_color(self.color_red, self.color_green, self.color_blue)
+        # self.get_color()
 
-    def _create_object(self):
-        if self.object_type not in FileList:
-            logging.warning('Create Object --> Object type is not valid')
-            return
+    def _import_reference(self):
+        cmds.file(f'{reference_location}{self.object_reference}', namespace=self.name_space, reference=True)
+        cmds.select(f'{self.name_space}:*', allDagObjects=True)
+        selected = cmds.ls(sl=True, transforms=True)
 
-        object_creator = FileList[self.object_type]
+        self.group_name = cmds.group(em=True, n=self.object_reference)
 
-        if not object_creator:
-            logging.warning('Create Object --> Object Creator not found')
-            return
+        for self.object_transform in selected:
+            cmds.parent(self.object_transform, self.group_name)
 
-        kwargs = {}
-        if self.object_transform:
-            kwargs['name'] = self.object_transform
-
-        self.object_transform = object_creator(**kwargs)
-        self.object_transform = self.object_transform[0]
+    # def _create_object(self):
+    #     if self.object_type not in FileList:
+    #         logging.warning('Create Object --> Object type is not valid')
+    #         return
+    #
+    #     object_creator = FileList[self.object_type]
+    #
+    #     if not object_creator:
+    #         logging.warning('Create Object --> Object Creator not found')
+    #         return
+    #
+    #     kwargs = {}
+    #     if self.object_transform:
+    #         kwargs['name'] = self.object_transform
+    #
+    #     self.object_transform = object_creator(**kwargs)
+    #     self.object_transform = self.object_transform[0]
 
     def _create_material(self):
         self.material_shading_node = cmds.shadingNode('lambert', asShader=True)
@@ -190,7 +207,7 @@ class Object:
 
 
 if __name__ == '__main__':
-    object_instance = Object('Cube', object_transform='my', object_tx=5, object_ty=5, object_tz=5, color_red=1,
+    object_instance = Object('my', 'MultiFile.mb', object_tx=5, object_ty=5, object_tz=5, color_red=1,
                              color_green=2, color_blue=3)
     object_instance.create()
     object_instance.select()

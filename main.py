@@ -1,6 +1,7 @@
+import sys
+
 import maya.OpenMayaUI as omui
 import maya.cmds as cmds
-import sys
 from PySide2 import QtWidgets, QtCore, QtGui
 from shiboken2 import wrapInstance
 
@@ -31,7 +32,7 @@ class NodeCreator(QtWidgets.QDialog):
         self.chosen_color = QtGui.QColor()
         self.setWindowTitle("Maya Node Creator")
         self.setMinimumWidth(200)
-        self.header_names = ['Name', 'Type', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
+        self.header_names = ['Name', 'NameSpace', 'Source File', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
         layout = QtWidgets.QGridLayout()
         self.setLayout(layout)
 
@@ -48,12 +49,11 @@ class NodeCreator(QtWidgets.QDialog):
         layout.addWidget(groupbox_4)
 
         self.object_checkbox = QtWidgets.QCheckBox()
-        # self.object_checkbox.setCheckState(QtCore.Qt.Unchecked)
 
-        self.object_name = QtWidgets.QLineEdit()
+        self.object_name_space = QtWidgets.QLineEdit()
 
-        self.object_list = QtWidgets.QComboBox()
-        self.object_list.addItems(list(core.FileList.keys()))
+        self.reference_list = QtWidgets.QComboBox()
+        self.reference_list.addItems(list(core.ReferenceList.keys()))
 
         self.object_tx = QtWidgets.QDoubleSpinBox()
         self.object_ty = QtWidgets.QDoubleSpinBox()
@@ -68,7 +68,7 @@ class NodeCreator(QtWidgets.QDialog):
 
         self.objects_table = QtWidgets.QTableWidget()
         self.objects_table.setColumnCount(len(self.header_names))
-        self.objects_table.setMinimumWidth(640)
+        self.objects_table.setMinimumWidth(740)
         self.objects_table.setHorizontalHeaderLabels(self.header_names)
         self.objects_table.itemChanged.connect(self.on_item_changed)
 
@@ -86,10 +86,10 @@ class NodeCreator(QtWidgets.QDialog):
 
         # General Setting
         self.general_layout = QtWidgets.QHBoxLayout()
-        self.general_layout.addWidget(QtWidgets.QLabel('Object Name:'))
-        self.general_layout.addWidget(self.object_name)
+        self.general_layout.addWidget(QtWidgets.QLabel('Name Space:'))
+        self.general_layout.addWidget(self.object_name_space)
         self.general_layout.addWidget(QtWidgets.QLabel('Select object from object directory'))
-        self.general_layout.addWidget(self.object_list)
+        self.general_layout.addWidget(self.reference_list)
         groupbox_1.setLayout(self.general_layout)
 
         # Transform Setting
@@ -139,8 +139,7 @@ class NodeCreator(QtWidgets.QDialog):
         self.object_storage = []
 
     def create_object(self):
-        object_instance = core.Object(self.object_type.currentText(),
-                                      object_transform=self.object_name.text(),
+        object_instance = core.Object(self.object_name_space.text(), self.reference_list.currentText(),
                                       object_tx=self.object_tx.value(),
                                       object_ty=self.object_ty.value(),
                                       object_tz=self.object_tz.value(),
@@ -158,11 +157,16 @@ class NodeCreator(QtWidgets.QDialog):
         transform_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
         transform_item.setCheckState(QtCore.Qt.Checked)
         self.objects_table.setItem(self.row_count, 0, transform_item)
-        transform_item.setData(QtCore.Qt.UserRole, object_instance.set_object_transform)
+        # transform_item.setData(QtCore.Qt.UserRole, object_instance.set_object_transform)
         transform_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
-        type_item = QtWidgets.QTableWidgetItem(object_instance.object_type)
+        type_item = QtWidgets.QTableWidgetItem(object_instance.name_space)
         self.objects_table.setItem(self.row_count, 1, type_item)
+        type_item.setFlags(QtCore.Qt.NoItemFlags)
+        type_item.setTextAlignment(QtCore.Qt.AlignCenter)
+
+        type_item = QtWidgets.QTableWidgetItem(object_instance.object_reference)
+        self.objects_table.setItem(self.row_count, 2, type_item)
         type_item.setFlags(QtCore.Qt.NoItemFlags)
         type_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
@@ -170,25 +174,25 @@ class NodeCreator(QtWidgets.QDialog):
         tx_item.setMinimum(-9999)
         tx_item.valueChanged.connect(self.on_value_changed)
         tx_item.setProperty('translate_x', object_instance.set_translate_x)
-        self.objects_table.setCellWidget(self.row_count, 2, tx_item)
+        self.objects_table.setCellWidget(self.row_count, 3, tx_item)
 
         ty_item = QtWidgets.QDoubleSpinBox()
         ty_item.setMinimum(-9999)
         ty_item.valueChanged.connect(self.on_value_changed)
         ty_item.setProperty('translate_y', object_instance.set_translate_y)
-        self.objects_table.setCellWidget(self.row_count, 3, ty_item)
+        self.objects_table.setCellWidget(self.row_count, 4, ty_item)
 
         tz_item = QtWidgets.QDoubleSpinBox()
         tz_item.setMinimum(-9999)
         tz_item.valueChanged.connect(self.on_value_changed)
         tz_item.setProperty('translate_z', object_instance.set_translate_z)
-        self.objects_table.setCellWidget(self.row_count, 4, tz_item)
+        self.objects_table.setCellWidget(self.row_count, 5, tz_item)
 
         color_button = QtWidgets.QPushButton('')
         color_button.clicked.connect(self.on_color_picker)
         color_button.setProperty('color_setter', object_instance.set_color)
         color_button.setProperty('color_getter', object_instance.get_color)
-        self.objects_table.setCellWidget(self.row_count, 5, color_button)
+        self.objects_table.setCellWidget(self.row_count, 6, color_button)
 
     def on_item_changed(self, item):
         item_data = item.data(QtCore.Qt.UserRole)
