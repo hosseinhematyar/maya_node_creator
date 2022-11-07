@@ -4,7 +4,7 @@ import os
 import maya.cmds as cmds
 
 ReferenceList = {
-    '-- None --': 'None',
+    # '-- None --': 'None',
 }
 
 reference_location = '/Users/hossein/Desktop/scene_files/'
@@ -24,12 +24,11 @@ get_reference_list()
 
 
 class Object:
-    def __init__(self, name_space, object_reference, object_tx=0, object_ty=0, object_tz=0,
+    def __init__(self, namespace, object_reference, object_tx=0, object_ty=0, object_tz=0,
                  color_red=0, color_green=0, color_blue=0):
-        self.name_space = name_space
+        self.namespace = namespace
         self.object_reference = object_reference
-        self.group_name = ''
-        self.object_transform = ''
+        # self.top_transform = self.namespace + 'asset'
         self.object_tx = object_tx
         self.object_ty = object_ty
         self.object_tz = object_tz
@@ -38,6 +37,20 @@ class Object:
         self.color_blue = color_blue
         self.material_shading_node = ''
         self.material_shading_engine = ''
+
+    @property
+    def namespace(self):
+        print("Getter method called")
+        return self._namespace
+
+    @namespace.setter
+    def namespace(self, value):
+        print("Setter method called")
+        if not value == self._namespace:
+            raise ValueError("The previous namespace is different from the new namespace")
+
+    def is_valid(self):
+        pass
 
     def create(self):
         self._import_reference()
@@ -51,15 +64,18 @@ class Object:
         # self.get_color()
 
     def _import_reference(self):
-        cmds.file(f'{reference_location}{self.object_reference}', namespace=self.name_space, reference=True)
+        if cmds.namespace(exists=self.namespace):
+            logging.warning('Import Reference --> This name space is duplicate in this scene')
+            return
 
-        cmds.select(f'{self.name_space}:*', allDagObjects=True)
-        selected = cmds.ls(sl=True, transforms=True)
+        cmds.namespace(add=self.namespace)
+        cmds.namespace(set=self.namespace)
 
-        self.group_name = cmds.group(em=True, n=self.object_reference)
+        cmds.file(f'{reference_location}{self.object_reference}', reference=True)
+        namespace_content = cmds.ls(f'{self.namespace}:*', assemblies=True)
+        cmds.namespace(set=':')
 
-        for self.object_transform in selected:
-            cmds.parent(self.object_transform, self.group_name)
+        cmds.group(namespace_content, name=self.top_transform)
 
     def _create_material(self):
         self.material_shading_node = cmds.shadingNode('lambert', asShader=True)
@@ -122,27 +138,27 @@ class Object:
         return object_translate
 
     def set_translate_x(self, translate_x):
-        if not cmds.objExists(self.object_transform):
+        if not cmds.objExists(self.namespace):
             logging.warning('Set Translate X --> No surface exists')
             return
 
-        cmds.setAttr(f'{self.object_transform}.tx', translate_x, edit=True)
+        cmds.setAttr(f'{self.namespace}.tx', translate_x, edit=True)
         return translate_x
 
     def set_translate_y(self, translate_y):
-        if not cmds.objExists(self.object_transform):
+        if not cmds.objExists(self.namespace):
             logging.warning('Set Translate Y --> No surface exists')
             return
 
-        cmds.setAttr(f'{self.object_transform}.ty', translate_y, edit=True)
+        cmds.setAttr(f'{self.namespace}.ty', translate_y, edit=True)
         return translate_y
 
     def set_translate_z(self, translate_z):
-        if not cmds.objExists(self.object_transform):
+        if not cmds.objExists(self.namespace):
             logging.warning('Set Translate Z --> No surface exists')
             return
 
-        cmds.setAttr(f'{self.object_transform}.tz', translate_z, edit=True)
+        cmds.setAttr(f'{self.namespace}.tz', translate_z, edit=True)
         return translate_z
 
     def get_color(self):
@@ -179,13 +195,24 @@ class Object:
 
         cmds.delete(self.object_transform)
 
-    def set_object_transform(self, new_object_transform):
-        if not cmds.objExists(self.object_transform):
-            logging.warning('Set Transform Name --> No surface exists')
-            return self.object_transform
+    # def set_namespace(self, new_namespace):
+    #     if not cmds.objExists(self.namespace):
+    #         logging.warning('Set NameSpace --> No surface exists')
+    #         return self.namespace
+    #
+    #     self.object_transform = cmds.rename(self.namespace, new_namespace)
+    #     return self.namespace
+    @namespace.setter
+    def namespace(self, value):
+        self._namespace = value
 
-        self.object_transform = cmds.rename(self.object_transform, new_object_transform)
-        return self.object_transform
+    @namespace.setter
+    def namespace(self, value):
+        self._namespace = value
+
+    @namespace.setter
+    def namespace(self, value):
+        self._namespace = value
 
 
 if __name__ == '__main__':

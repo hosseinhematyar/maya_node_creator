@@ -32,7 +32,7 @@ class NodeCreator(QtWidgets.QDialog):
         self.chosen_color = QtGui.QColor()
         self.setWindowTitle("Maya Node Creator")
         self.setMinimumWidth(200)
-        self.header_names = ['Name', 'NameSpace', 'Source File', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
+        self.header_names = ['NameSpace', 'Reference', 'TranslateX', 'TranslateY', 'TranslateZ', 'Color']
         layout = QtWidgets.QGridLayout()
         self.setLayout(layout)
 
@@ -50,10 +50,10 @@ class NodeCreator(QtWidgets.QDialog):
 
         self.object_checkbox = QtWidgets.QCheckBox()
 
-        self.object_name_space = QtWidgets.QLineEdit()
+        self.object_namespace = QtWidgets.QLineEdit()
 
-        self.reference_list = QtWidgets.QComboBox()
-        self.reference_list.addItems(list(core.ReferenceList.keys()))
+        self.object_reference = QtWidgets.QComboBox()
+        self.object_reference.addItems(list(core.ReferenceList.keys()))
 
         self.object_tx = QtWidgets.QDoubleSpinBox()
         self.object_ty = QtWidgets.QDoubleSpinBox()
@@ -64,13 +64,13 @@ class NodeCreator(QtWidgets.QDialog):
         self.select_color.clicked.connect(self.on_select_color)
 
         self.random_color = QtWidgets.QCheckBox('Use random color')
-        self.random_color.clicked.connect('')
+        # self.random_color.clicked.connect('')
 
         self.objects_table = QtWidgets.QTableWidget()
         self.objects_table.setColumnCount(len(self.header_names))
-        self.objects_table.setMinimumWidth(740)
+        self.objects_table.setMinimumWidth(640)
         self.objects_table.setHorizontalHeaderLabels(self.header_names)
-        self.objects_table.itemChanged.connect(self.on_item_changed)
+        # self.objects_table.itemChanged.connect(self.on_item_changed)
 
         self.create_button = QtWidgets.QPushButton('Create Object')
         self.create_button.clicked.connect(self.create_object)
@@ -87,9 +87,9 @@ class NodeCreator(QtWidgets.QDialog):
         # General Setting
         self.general_layout = QtWidgets.QHBoxLayout()
         self.general_layout.addWidget(QtWidgets.QLabel('Name Space:'))
-        self.general_layout.addWidget(self.object_name_space)
+        self.general_layout.addWidget(self.object_namespace)
         self.general_layout.addWidget(QtWidgets.QLabel('Select object from object directory'))
-        self.general_layout.addWidget(self.reference_list)
+        self.general_layout.addWidget(self.object_reference)
         groupbox_1.setLayout(self.general_layout)
 
         # Transform Setting
@@ -139,13 +139,15 @@ class NodeCreator(QtWidgets.QDialog):
         self.object_storage = []
 
     def create_object(self):
-        object_instance = core.Object(self.object_name_space.text(), self.reference_list.currentText(),
+        object_instance = core.Object(self.object_namespace.text(), self.object_reference.currentText(),
                                       object_tx=self.object_tx.value(),
                                       object_ty=self.object_ty.value(),
                                       object_tz=self.object_tz.value(),
                                       color_red=self.chosen_color.redF(),
                                       color_green=self.chosen_color.greenF(),
                                       color_blue=self.chosen_color.blueF())
+        if not object_instance.is_valid():
+            return
 
         object_instance.create()
         self.object_storage.append(object_instance)
@@ -153,46 +155,41 @@ class NodeCreator(QtWidgets.QDialog):
         self.row_count = self.objects_table.rowCount()
         self.objects_table.insertRow(self.row_count)
 
-        transform_item = QtWidgets.QTableWidgetItem(object_instance.object_transform)
-        transform_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-        transform_item.setCheckState(QtCore.Qt.Checked)
-        self.objects_table.setItem(self.row_count, 0, transform_item)
-        # transform_item.setData(QtCore.Qt.UserRole, object_instance.set_object_transform)
-        transform_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        namespace_item = QtWidgets.QTableWidgetItem(object_instance.namespace)
+        namespace_item.setFlags(QtCore.Qt.NoItemFlags)
+        namespace_item.setCheckState(QtCore.Qt.Checked)
+        self.objects_table.setItem(self.row_count, 0, namespace_item)
+        # namespace_item.setData(QtCore.Qt.UserRole, object_instance.set_namespace)
+        namespace_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
-        type_item = QtWidgets.QTableWidgetItem(object_instance.name_space)
-        self.objects_table.setItem(self.row_count, 1, type_item)
-        type_item.setFlags(QtCore.Qt.NoItemFlags)
-        type_item.setTextAlignment(QtCore.Qt.AlignCenter)
-
-        type_item = QtWidgets.QTableWidgetItem(object_instance.object_reference)
-        self.objects_table.setItem(self.row_count, 2, type_item)
-        type_item.setFlags(QtCore.Qt.NoItemFlags)
-        type_item.setTextAlignment(QtCore.Qt.AlignCenter)
+        reference_item = QtWidgets.QTableWidgetItem(object_instance.object_reference)
+        self.objects_table.setItem(self.row_count, 1, reference_item)
+        reference_item.setFlags(QtCore.Qt.NoItemFlags)
+        reference_item.setTextAlignment(QtCore.Qt.AlignCenter)
 
         tx_item = QtWidgets.QDoubleSpinBox()
         tx_item.setMinimum(-9999)
         tx_item.valueChanged.connect(self.on_value_changed)
         tx_item.setProperty('translate_x', object_instance.set_translate_x)
-        self.objects_table.setCellWidget(self.row_count, 3, tx_item)
+        self.objects_table.setCellWidget(self.row_count, 2, tx_item)
 
         ty_item = QtWidgets.QDoubleSpinBox()
         ty_item.setMinimum(-9999)
         ty_item.valueChanged.connect(self.on_value_changed)
         ty_item.setProperty('translate_y', object_instance.set_translate_y)
-        self.objects_table.setCellWidget(self.row_count, 4, ty_item)
+        self.objects_table.setCellWidget(self.row_count, 3, ty_item)
 
         tz_item = QtWidgets.QDoubleSpinBox()
         tz_item.setMinimum(-9999)
         tz_item.valueChanged.connect(self.on_value_changed)
         tz_item.setProperty('translate_z', object_instance.set_translate_z)
-        self.objects_table.setCellWidget(self.row_count, 5, tz_item)
+        self.objects_table.setCellWidget(self.row_count, 4, tz_item)
 
         color_button = QtWidgets.QPushButton('')
         color_button.clicked.connect(self.on_color_picker)
         color_button.setProperty('color_setter', object_instance.set_color)
         color_button.setProperty('color_getter', object_instance.get_color)
-        self.objects_table.setCellWidget(self.row_count, 6, color_button)
+        self.objects_table.setCellWidget(self.row_count, 5, color_button)
 
     def on_item_changed(self, item):
         item_data = item.data(QtCore.Qt.UserRole)
@@ -203,9 +200,9 @@ class NodeCreator(QtWidgets.QDialog):
         if not changed_value:
             return
 
-        if item.column() == self.header_names.index('Name'):
-            new_transform_name = item_data(changed_value)
-            item.setText(new_transform_name)
+        if item.column() == self.header_names.index('NameSpace'):
+            new_namespace = item_data(changed_value)
+            item.setText(new_namespace)
 
     def on_value_changed(self, value):
         sender = self.sender()
