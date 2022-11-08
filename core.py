@@ -24,11 +24,11 @@ get_reference_list()
 
 
 class Object:
-    def __init__(self, namespace, object_reference, object_tx=0, object_ty=0, object_tz=0,
+    def __init__(self, object_reference, object_tx=0, object_ty=0, object_tz=0,
                  color_red=0, color_green=0, color_blue=0):
-        self.namespace = namespace
+        self._namespace = ''
         self.object_reference = object_reference
-        # self.top_transform = self.namespace + 'asset'
+        self.top_transform = self.namespace + 'asset'
         self.object_tx = object_tx
         self.object_ty = object_ty
         self.object_tz = object_tz
@@ -46,11 +46,17 @@ class Object:
     @namespace.setter
     def namespace(self, value):
         print("Setter method called")
-        if not value == self._namespace:
-            raise ValueError("The previous namespace is different from the new namespace")
+        self._namespace = value
+
+        if not cmds.namespace(exists=self._namespace):
+            pass
 
     def is_valid(self):
-        pass
+        if not cmds.namespace(exists=self.namespace):
+            logging.warning('IsValid --> This name space is not define')
+            return
+
+        return True
 
     def create(self):
         self._import_reference()
@@ -216,8 +222,9 @@ class Object:
 
 
 if __name__ == '__main__':
-    object_instance = Object('my', 'MultiFile.mb', object_tx=5, object_ty=5, object_tz=5, color_red=1,
+    object_instance = Object('MultiFile.mb', object_tx=5, object_ty=5, object_tz=5, color_red=1,
                              color_green=2, color_blue=3)
+    object_instance.namespace = 'my'
     object_instance.create()
     object_instance.select()
     object_instance.delete()
